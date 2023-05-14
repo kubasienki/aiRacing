@@ -1,0 +1,21 @@
+PPO_0-8 128 x128
+PPO_9 - 64x64 entropy coef 0.0
+PPO_10 - 64x64 ent coef = 0.1 
+PPO_12 - 128x128 enc_coef=0.0
+PPO_17 - new reward function, track allows looping, no endgame after new lap
+PPO_18 - no reward normalization
+PPO_20 - reward normalization, but enabled hud, so ai can see previous input states
+PPO_21 - batch_size=256, ent_coef=0.00238306)
+PPO_22 - batch_size=default reward * 1/50
+PPO_23 - no negative reward for outside track, just kill timer, reward again normal and vectorized normalized reward wrapper
+PPO_24 - ent_coeff is set to 0.0 (default), reward for speed multiplied by timestep, to equalize scales of distance and speed rewards; WENT BACKWARDS
+PPO_25 - envs n=6 , speed scale removed division by 5 to make it more in line to the distance driven; KINDA WAS GAINING TRACTION, MAY BE WORTH A RETRY; BUT WAS DOING SOME THINGS IN REVERSE
+PPO_26 - revert to a reward normalizer per env
+PPO_27 - cont of 26
+PPO_28 - turn off hud
+PPO 3 FOLDER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+PPO_1 - added distance traveled out of the track center penalty (or reward when coming back to the track center) - currently weighted on the same level as moving on the track 
+PPO_2 - continuued
+PPO_3 - removed negative reward for just existing, removed velocity reward, removed collision penalty, removed out of track penalty, removed out too long penalty
+This way the reward is just for moving forward, beating max distance (new record distance as a reward x 10 scale), and going towards thge middle of a track
+PPO_4 - removed killing for being out of track for too long, this way it will maybe learn to come back to track? Allowwing the car to be collided for longer, before killing
