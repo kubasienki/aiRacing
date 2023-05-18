@@ -19,3 +19,67 @@ PPO_2 - continuued
 PPO_3 - removed negative reward for just existing, removed velocity reward, removed collision penalty, removed out of track penalty, removed out too long penalty
 This way the reward is just for moving forward, beating max distance (new record distance as a reward x 10 scale), and going towards thge middle of a track
 PPO_4 - removed killing for being out of track for too long, this way it will maybe learn to come back to track? Allowwing the car to be collided for longer, before killing
+	Result: 2.5 km max
+RecurrentPPO_1 - LSTM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! N_envs=4
+RecurrentPPO_2 (and 3)  - removed framestacking
+	Resulted in max distance < 200m, shitty
+
+PPO_5 - revert to CNN w/o lstm  and readded framestacking and random track initialization
+	RESULT - crashed, probably because too close to ground on init
+PPO_6 - retry with 0.5m move up on start 
+	RESULT - FAILED at 60k, crashed one of the sims
+PPO_7 - retry
+	SAME FAIL
+PPO_8 - starting point 1.5m above ground?!
+	RESULT - started learning but crashed at 550k
+PPO_10 - better implementation of rotation handling on random start point
+	RESULT: all up to 11 carshed!!!
+PPO_12 - better (more angle accurate placing function) ; NEW METRICS (velocity, and fixed max distance in terms of the max driven distance)	
+PPO_14 - maybe a better function for placing???? fixed max distance driven reporting
+	RESULT - about 400-500 meters result, very shaky graph, may be bad reward
+	NOT CRASHING
+
+
+NOTES:::
+While testing env in a manual mode found out that driving out of the track
+ and then coming back on it (while beating max distance increases the severity)
+Creates spikes with rewards 1000x higher than normal. BAD - 
+thinking to recode the distance function 
+use my bezier approximation as a distance function that works even outside the track
+this way I won't have issues with the spikes and maybe even this "distance from center" penalty will not be needed  
+
+
+PPO_15 - changed the distance funtion to be a distance based on projection to track
+	so it works also outside of a track. but a litlle bit spiky... also while out of the track random negative spikes.
+	I've left the distance to middle penalty
+	RESULT - max 600m
+PPO_16 - readded speed award
+	RESULT: ended similairly, a bit lower on average (400m), but high spikes (800m).
+
+PPO_17 - increased batch size from 64 to 512 (read that for continouus action spaces need higher) and 
+	removed speed reward yet again	
+	next step may try decreasing epochs (as the default is very high 10)
+	
+	RESULT: quite well 33000m !!!! started to degenerate at 1.5mil steps
+
+PPO_19 - decreased the epoch size from 10 to 5 - will probably learn slower, but also maybe less destabilize? 
+	result promising start but veeery slow, now need to switch to cs go! Quite shaky line, but still growing
+	oscilating a little
+PPO_20 - RESULT: crashed at 4milion steps at around 800m - 
+	learning slow, kinda stalling at the moment of the crash
+
+PPO_21 - epochs up to 10 again, increase reward discount from 0.99 to 0.95
+	CRASHED?! crasher are again more common, but why?
+PPO_22  - retry
+	RESULT - worse than ppo_17, but dont know if it's not initialisation
+	NOT CONCLUSIVE, reverting
+PPO_23 - increased batch size to 1024, huge number, only two batches fit in therollout (and 6 envs). will try. Reverted gamma to 0.99
+	RESULT - less than ppo_17 (2871m (MINUS 200M?)) - maybe introduce curiculum learning? 
+	first learn to stay in the track (high reward for keeping in track, low reward for progressing)
+	it seems now it learns to speed and has trouble with some corners.
+	it has higher reward but lower max distance than ppo_17
+	I'll decrease moving reward/penalty to 0.9, 
+	decrease the new record reward to 1.1
+	this way moving one meter to the center will be as valuable as moving 2 meters forward and going out of the track would be even a bit more penalized than moving out of the track
+	ALSO INVESTIGATE IF GOING THROUGH THE FINISH LINE END EPISODE SOMETIMES?????!!
+PPO_24 - look ppo_23 changed reward accordingly to ppo_23, also batch size set to 1024, just because it still provided some better stability, maybe it will have better performance, and it's the night so i can check

@@ -133,8 +133,7 @@ class VDriftEnv(gym.Env):
             port = address[1]
             host = address[0]
         else:
-            subprocess.Popen(['./build/vdrift', '-resolution', str(H) + "x" + str(W), "-ai", str(port)], cwd="./vdrift",
-                             stdout=subprocess.DEVNULL)
+            subprocess.Popen(['./build/vdrift', '-resolution', str(H) + "x" + str(W), "-ai", str(port)], cwd="./vdrift")
             time.sleep(3)
 
         print("####################################server started     " + host + ":" + str(port))
@@ -147,6 +146,7 @@ class VDriftEnv(gym.Env):
         self._last_distance = 0.0
         self._max_distance = 0.0
         self._last_distance_from_mid = 0.0
+        self._episode_start_distance = 0.0
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
 
@@ -237,6 +237,7 @@ class VDriftEnv(gym.Env):
         self._last_distance_from_mid = math.sqrt(math.pow(unpacked[14]-unpacked[0], 2) + math.pow(unpacked[15]-unpacked[1], 2))
         self._last_distance = unpacked[12]
         self._max_distance = unpacked[12]
+        self._episode_start_distance = unpacked[12]
         return self._observation
 
     # %%
@@ -308,8 +309,8 @@ class VDriftEnv(gym.Env):
         # print(distance)
         reward = (moving_forward + distance * 10.0 ) \
                  + (moved_out_of_mid) \
-                 #- 0.1 \
-                 #+ (-10.0 * ( 1.0 - vel_sum_timestep_discounted * 10.0) if vel_sum < 0.1 else vel_sum_timestep_discounted ) \
+                 #+ (-10.0 * ( 1.0 - vel_sum_timestep_discounted * 10.0) if vel_sum < 0.1 else vel_sum_timestep_discounted )
+        #- 0.1 \
                  #+ (-200.0 if colided else 0.0) \
                  #+ (-100.0 if self._out_too_long > 1999 else 0)  # + (-0.5 if out_of_track else 0.0)
         # reward = reward / 50.0
@@ -317,9 +318,15 @@ class VDriftEnv(gym.Env):
         #   print(unpacked[14:])
 
         observation = self._get_obs()
-        info = self._get_info()
-        info["max_dist"] = self._max_distance
-        info["out_of_center"] = self._last_distance_from_mid
+        info = {
+            'max_dist': self._max_distance - self._episode_start_distance,
+            'out_of_center': self._last_distance_from_mid,
+            "velocity": math.sqrt(unpacked[8]**2 + unpacked[9]**2 + unpacked[10]**2),
+            "moving_forward": moving_forward,
+            "max_distance_gain": distance,
+            "position": [unpacked[0], unpacked[1], unpacked[2]],
+            "track_pos": [unpacked[14], unpacked[15], unpacked[16]]
+        }
         colision_timeout_factor = 100 #was: 1000
         out_of_track_timeout_factor = 0 #was: 0.1
         self._out_too_long += (10 if vel_sum < 0.5 else -0.5) + ( colision_timeout_factor if colided else 0) + (

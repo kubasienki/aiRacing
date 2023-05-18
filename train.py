@@ -11,6 +11,8 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecFrameStack, VecNormalize
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
 
+from sb3_contrib import RecurrentPPO
+
 
 class TensorboardCallback(BaseCallback):
     """
@@ -33,7 +35,8 @@ class TensorboardCallback(BaseCallback):
     def _on_step(self) -> bool:
         # Log scalar value (here a random variable)
         self.max_dist = max(self.locals["infos"][0]["max_dist"], self.max_dist)
-        self.logger.record("max_dist", self.max_dist)
+        self.logger.record("quality/max_dist", self.max_dist)
+        self.logger.record_mean("quality/mean_velocity", self.locals["infos"][0]["velocity"])
         self.logger.record_mean("out_of_center", self.locals["infos"][0]["out_of_center"])
 
         return True
@@ -79,7 +82,7 @@ env = VecFrameStack(env, 8)
 
 # PPO.load("vdrift_model", env, verbose=1)# = PPO("CnnPolicy", env, verbose=1)
 #model = A2C("CnnPolicy", env, verbose=1, policy_kwargs=dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5)))
-model = PPO("CnnPolicy", env, verbose=1, tensorboard_log="./ppo_cnn_tensorboard_3/")
+model = PPO("CnnPolicy", env, verbose=1, tensorboard_log="./ppo_cnn_tensorboard_3/", batch_size=1024, n_epochs=10)
 #model = PPO.load("vdrift_model_cnn2")
 for i in range(2, 10):
     model.learn(total_timesteps=5000000, callback=TensorboardCallback())

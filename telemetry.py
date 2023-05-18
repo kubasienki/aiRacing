@@ -54,7 +54,9 @@ s.sendall(actionPacket)
 
 out_too_long = 0
 last_distance_from_mid_track = 0.0
+last_distance_from_mid = 0.0
 while True:
+    i+= 1
     updateGraph()
     total_time += timestep
     start_time = time.time()
@@ -79,8 +81,10 @@ while True:
 
 
     distance_reported = unpacked[12]
+    print(unpacked[12])
     distance = max(distance_reported - max_distance, 0.0)
     moving_forward = (distance_reported - last_distance)
+    moved_out_of_mid = (last_distance_from_mid - distance_from_mid_track)
 
     if distance > 1500.0 or abs(moving_forward) > 1500.0:
         distance = 0.0
@@ -93,14 +97,13 @@ while True:
 
     vel_sum = abs(unpacked[8]) + abs(unpacked[9]) + abs(unpacked[10])
     # print(distance)
-    reward = moving_forward + distance * 10.0 - 0.1 + (
-        -10.0 * (1.0 - vel_sum * 10.0) if vel_sum < 0.1 else vel_sum / 5.0) - (200.0 if colided else 0.0) + (
-                 -100.0 if out_too_long > 1999 else 0) + (-0.5 if out_of_track else 0.0)
+    reward = (moving_forward + distance * 10.0 ) \
+                      + (moved_out_of_mid)
     out_too_long = 0.0
     total_reward += reward
-    rewards.append(last_distance_from_mid_track-distance_from_mid_track)
+    rewards.append(moving_forward)
     last_distance_from_mid_track = distance_from_mid_track
-    maxDistance.append(0.0)
+    maxDistance.append(moving_forward)
 
     total_data = b""
     if photo:
@@ -112,7 +115,7 @@ while True:
         s.sendall(bytes("OK", 'ascii'))
         total_received = 0
 
-    actionPacket = struct.pack("ffffff??", timestep, 0.8, 0.0, 0.0, 0.0, 0.0, False, photo)
+    actionPacket = struct.pack("ffffff??", timestep, 0.8, 0.0, 0.0, 0.0, 0.0, 1 == 0, photo)
     s.sendall(actionPacket)
     if photo:
         while total_received < size:
