@@ -82,4 +82,221 @@ PPO_23 - increased batch size to 1024, huge number, only two batches fit in ther
 	decrease the new record reward to 1.1
 	this way moving one meter to the center will be as valuable as moving 2 meters forward and going out of the track would be even a bit more penalized than moving out of the track
 	ALSO INVESTIGATE IF GOING THROUGH THE FINISH LINE END EPISODE SOMETIMES?????!!
-PPO_24 - look ppo_23 changed reward accordingly to ppo_23, also batch size set to 1024, just because it still provided some better stability, maybe it will have better performance, and it's the night so i can check
+PPO_24 - look ppo_23 changed reward accordingly to ppo_23, 
+	also batch size set to 1024, just because it still provided some better stability, 
+	maybe it will have better performance, and it's the night so i can check
+PPO_25 - cont. 
+	RESULT - shitty - 1500m at most, on average 1k
+	maybe the issue is that penalty is just for going out from the middle. So over time it behaves like a controller with steady state error
+	- changing the penalty to be a function of a distance from center and not a movement from center.
+	- staying 2m away will have the same penalty as a reward for going forward 2m/s. this way car will always be pulled towards center. 
+	- the max distance record break will be added on top, ADDITIONALLY TO distance reward balancing the out of track penalty
+PPO_26 - changes above - FAIL!!!!! forgot to change sign on distance from the center of track, so the car giot revard for going out of the track
+
+PPO_27 - fixed ppo_26
+PPO_28 - decreased steady state error, added a 3m(2x 1.5m from center) deadband and introduced the derivative error again (movement out of the center), batch size back to 512
+	 it looks like tuning a PID controller (D - moving out of center; I - distance out of center penalty 
+PPO_29 cont
+
+PPO_30 - restest ppo_17
+	It seems the strategy here is to follow the striped edge of a track. The steady state error problem persists. It is strange tho, that ppo_17 was so succesfull, maybe I shoud leave it learning over night?
+	It is learning much slower than ppo_17
+	
+	Kinda tottaly different result than ppo_17, more like others like 16? it's strange. I may have to rerun it, but too curious if small steady state error penalty will help.
+	RESULT: 1500m max (but smoothed just 800), rather bad.
+
+PPO_31 - added  -(distance_from_mid * timestep * 0.1) to reward to fight steady state error. 
+		in this scale, going 1 mps along a track, at 10m distance will result in a tie for moving forward, and 1/10th of max distance reward. 
+		Done to slightely guide the car towards center, but not be too strict; 3m deadband (1.5 m symmetrically)
+		ADDED () to max distance factor. WHEN TESTING PPO_30 SHOULD ALSO FIX IT
+	ENABLED MULTITHREADED VDRIFT
+	RESULT - little better than ppo_30, not by much (1740m) but average similar to ppo_30
+PPO_32 - increased numer of envs to 8!!!!
+	FAILED after 1.7h
+PPO_33 - retry
+		RESULT: SHITTy at best (1064m) with 800m average, retry ppo_31 to test
+PPO_34 - retest PPO_31, really want to test sde tho. NEXT ONE RETRY PPO_31!!!!!!!!!!!!!!!!!!!
+		CHANGE: sde_sample_freq=4; use sde = true; 
+			Reverted to 6 envs
+			ADDITIONAL BET: lowered epochs to 3, so kl wouldn't be this big??; value taken from atari paper; 
+			Total timesteps increaset to 15 mil, because of epoch update
+
+REALLY NEED TO TEST REPEATABILITY (if the setup can produce more variation noise than my changes produce signal) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! maybe epochs will increase repeatability
+
+PPO_36 - crashed at 6.5 mil ; kinda seemed promising, but very spiky. 
+	Trended upwards, but the graph always had high amplitude, high frequency, noise between wide ranges.
+	max 400m, but smoothed just 100
+	kl divergence spikes to 5, but rather than that very small, like 0.006
+	
+PPO_37 - epochs set to 8 and sde reverted; WILL ADD COLLISION PENALTY! colision penalty set to -10 each frame when colided. colided timeout factor is 100 out of 2000 ( max 20 frames penalty)
+		kl high, over 1 (but epochs kinda big); learning after 1mil steps; crashed at 600 meters at 1.5 mil
+
+PPO_38 - this time will test just the epochs; disable sde, epochs left as 3, end of training set to 5mil, so maybe I can get a base model for further tests
+	revert crash penalty, because I want a tried env like ppo_31 RETESTING PPO_31 with epochs set to 3
+	crash
+PPO_39 - retry		
+
+	FAIL
+PPO_40 - added 5 cm to height of car spawn and restart;
+	CRASH, 
+PPO_41 - CRASH
+
+PPO_54 - i have a suspicion that sometimes the bezier normal is not pointing up? Because of that I'll use a track segment angle to rotate the up offset vector
+ 		added max distance histogram!!!
+
+TODO add descriptions
+
+PPO_60 - 10 epochs run to generate histograms for those too
+
+###SHOULD WORK ON ENV STABILITY!!!!!!!!!!!1
+
+
+NEW FOLDER 		PPO_4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+
+PPO_0 - added new metrics, track end reasons, track end points, track crash sites histogram, also now exporting data from all of the envs, not just the first!
+	REWARD FUNCTION CHANGE
+	previousy I've noticed that it learned fine in the PPO_54, just when going out of the track it stopped and died because of the lack of speed
+	I'm going to change reward proportions of the distances, so the max_distance multiplier will be 1, distance multiplier will be 1
+	but the out of track movement will have scale of 3
+	and outside of the track I'll add the movement reward of equal to speed/2 and penalty of -1 if less than 2kmph
+
+	NOT STARTED FROM CHECKPOINT OF PPO_54
+
+	CRASHED at 1.2 mil steps
+PPO_2 -retry
+	NICe!!! 3400 meters, ppo 7 retry, same result. Kinda lears, just was not learning onm the last part of track
+	probably was not woring crossing the finish line
+	fixed the reward after the end of track, should work?
+PPO_11 - run with fixed after start distance
+	 fixed logging chart scale
+	RESULT learning A, OK! eveng getting back from outside of a track	
+
+PPO_12 - fixed bad histogram in PPO_11, will try to start from ppo_11 checkopint
+
+	Crahsed, but kinda learning. however killspeed is to low, cars try to get back to track but they die too soon as they are too slow
+	
+PPO_13 retry
+	CRASHED ON 4.9 mil :D kinda bad run, and also histogram of ends won't show anything after crossing the line, but why?? investigating
+
+
+PPO_14 - fixed reset just before the line. now distance should be monotonous over multiple laps 
+        FAIL - NOT FIXED THE RESET
+
+PPO_15 -  ppo_14 may have worked??? damn. Tested it on ppo_11 checkpoint and histogram was 5k+ meters; I'll retry after cs go :D
+        CHANGE: also decreased too slow timeout from 10 (out of 2000) to 5, because some cars were almost getting back on track but then died.
+        RUN from ppo_11 checkpoint - maybe the relaxation with dying will help retrain. strangely there are no cars going through the finish line on a dist histogram
+        Maybe a bit too small spawning points locations for now??? but some time in the future it should cross
+        there it is??? 4522m?
+        working, paused
+
+PPO_16 - leaving for night the verified ppo_15 scenario but from scratch
+
+UP TO PPO_18 - stopped at ppo_18 because it seemed to be degenerating. histograms work, there are crash hotspots at 1500 and 3500m
+        Adding markers of distance jump spots to debug if those are not a problem in the hotspots
+PPO_19 - running off ppo_16 checkpoint, testing if the network is cheating finding warp points on track points close together
+
+        The network has a problem after getting out of track, it just stops and dies, and it is bad.....
+        there is still a smaller spike when crossing the line, +9meters and then -2m ...
+
+PPO_20 - added small punishment for the collision, I believe the network degenerated because it just went for the wall to limit the time it's stuck outside of a track. Will require full retrain ...
+        CHANGE:     COLLISION PENALTY SET FOR -2 (MAX 20 FRAMES OF COLLISION BEFORE EPISODE END, SO MAX -40 REWARD, VERY SUBTLE NUDGE, AS WHILE GOING FAST THE REWARD EACH FRAME MAY BE 20!)
+
+
+NEW FOLDER ############################################## PPO_cnn ... 5!!!
+
+Added workaround for crashing env - restarts env
+Added eval callback
+Will try long training now
+
+PPO_0 - started from ppo_20 checkpoint
+
+PPO_3 - slightly degenerated after ppo_2 (on 2 mil step), but still higher mean end distance... will leave it running over night, even thou it looks like it's already cooked, need to try lowering the learning rate!!!!!!!!!!!!!!
+
+        SHITTY RESULT IN TERMS OF DISTANCE!! EVEN THOU LATER I SAY A GOOD RUN BECAUSE CAR WAS GOING FOR 4K STEPS
+
+        collectively a good run, episodes over 4k steps!!! distance up to 3400, crashing less, but started to circle on a sidetrack, maybe it's more valuable? the reward may be skewed, need to test that, and the LOWER LEARNING RATE
+
+        for some reason it stopped on ppo_4, but it still was very degenerated
+
+PPO_5 - after inspecting "best model" checked that id deos circles outside of the track, or drives straight into a wall,
+        WILL CHANGE COLLIDED PENALTY TO -10 AND ADD OUT OF A TRACK PENALTY OF -0.1
+        LOWERED LEARNING RATE FROM learning_rate=0.0003 to learning_rate=0.0001
+        Increased the learning cycle from 5mil to 15mil, as I have best model eval checkpoint
+        starting from clean model
+
+        RESULTS OK!!!! PPO_6 crashed eval env, strange!
+
+PPO_7 - starting from ppo best checkpoint from ppo, deacreased learning rate to 0.00001 (1/10th of previous one)
+           INCREASED OUT OF TRACK PENALTY TO -0.2
+           REMOVED EVAL ENV NORMALIZATION!!!
+
+PPO_8 - dumb gamble for a night!!!!!!!!!!!!!!!!!!
+        NO SDE compatibility issue, restart from best checkpoint from ppo_7!!!
+        also add penalty for dying from out of track and colided -30
+        add out of track score bias of -5 (after looking on scale of reward)
+        out of track speed penalty treshold is now higher minimal speed is now 5, was 2kmph!!
+        colided penalty from 5 to 8!!
+        RESULT - NOT LEARNING! Probably degenerated from too much learning
+
+PPO_9 - start from clean, ppo_8 settings add sde, sde sampling 4; learning rate set to 0.0001
+
+    RESULT rather bad, degenerated, cars moving backwards, not suitable for the current setup
+    27 deaths per rollout... but maybe not trained enough, looked like degenerating, reward steadily falling, never crossed a lap
+
+
+PPO_11 - retrying the same but without sde, for comparison
+
+PPO_12 - very promising!!!!MULTIPLE LAPS ONCE.   but crashed. will retry! FROM CHECKPOINT OF ppo_10
+
+PPO_14 trying vec normalize, but not worked ands crashed at 589k, maybe at validation?!!!
+
+PPO_15 - put normalize before framestack, will try if it will normalzie this time; tried starting from ppo_11 end checkpoint
+
+
+PPO_27 -clean start, vec normalize, working great, saved checkpoint and norm weights!!!
+
+kinda working, some crashes, ppo_30 is ok
+
+PPO_31 - checkpoint from the ppo_29, normalization also!
+                "batch_size": 512,
+                "n_epochs": 3,
+                "learning_rate": 0.00001,
+
+                decreased learning rate by 10 - will leave it running very long as i'm leaving for travel.
+                it works so low learning rate should polish it out.
+
+                changed velocity reward to be given also on the track.
+
+                reward = (moving_forward + (max_distance_multiplier * distance)) \
+                                     + moved_out_of_mid_multiplier * moved_out_of_mid \
+                                     - (distance_from_mid) \
+                                     + velocity_multiplier * (-(1.0 - vel_sum_timestep_discounted * (1.0/minimal_speed)) if vel_sum < minimal_speed else vel_sum_timestep_discounted/4) \
+                                     - (8.0 if colided else 0.0) \
+                                     - (5.0 if out_of_track else 0.0) \
+                                     - (30.0 if info["ended"] else 0.0)
+
+
+                after tests on env_test decided to also increase frequency, from 20hz to 50hz - wanted to test 100, but it would make kill limits suuuper fast -true, andepisode too short to learn - my guess
+                it will fuck up the normalization, but i have a low learning rate so let's try
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+pitstop gives huge reward explosion - over 60!!!!
+	
+	
+	

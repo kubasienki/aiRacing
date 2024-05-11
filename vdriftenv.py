@@ -116,9 +116,9 @@ photo = True
 
 
 class VDriftEnv(gym.Env):
-    metadata = {"render_modes": ["text", "graphic"], "render_fps": 4}
+    metadata = {"render_modes": ["text", "rgb_array"], "render_fps": 20}
 
-    def __init__(self, render_mode=None, size=5):
+    def connect_server(self):
         sock = socket.socket()
         sock.bind(('', 0))
         port = sock.getsockname()[1]
@@ -127,26 +127,36 @@ class VDriftEnv(gym.Env):
 
         r = redis.Redis(host='localhost', port=6379, decode_responses=True)
         url = r.lpop('vdrift')
+        print(url)
 
         if url != None:
             address = url.split(":")
             port = address[1]
             host = address[0]
         else:
-            subprocess.Popen(['./build/vdrift', '-resolution', str(H) + "x" + str(W), "-ai", str(port)], cwd="./vdrift")
+            subprocess.Popen(
+                ['./build/vdrift', '-multithreaded', '-resolution', str(H) + "x" + str(W), "-ai", str(port)],
+                cwd="./vdrift")
             time.sleep(3)
 
         print("####################################server started     " + host + ":" + str(port))
 
-        self.size = size  # The size of the square grid
-        self.window_size = 512  # The size of the PyGame window
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
+        time.sleep(3)
+
+        print("####################################server connected     " + host + ":" + str(port))
         self._observation = np.zeros((H, W, 3), dtype='B')
         self._last_distance = 0.0
         self._max_distance = 0.0
         self._last_distance_from_mid = 0.0
         self._episode_start_distance = 0.0
+
+    def __init__(self, render_mode=None, fromStartLine=5):
+
+        self.fromStartLine = fromStartLine
+        self.connect_server()
+        self.window_size = 512  # The size of the PyGame window
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
 
@@ -218,23 +228,45 @@ class VDriftEnv(gym.Env):
     # and some auxiliary information. We can use the methods ``_get_obs`` and
     # ``_get_info`` that we implemented earlier for that:
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=None, options=None, fromStartLine=False):
         # We need the following line to seed self.np_random
 
-        resetPacket = struct.pack("ffffff??", 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, True, False)
+        resetPacket = struct.pack("ffffff???", 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, True, False, self.fromStartLine)
         self.socket.sendall(resetPacket)
         data = self.socket.recv(1024)
 
         self._observation = np.zeros((H, W, 3), dtype='B')
         info = self._get_info()
 
-        unpacked = struct.unpack("ffffffffffffffffffffffffffffff", data)
+        try:
+            unpacked = struct.unpack("ffffffffffffffffffffffffffffff", data)
+        except:
+            print("restarting env, reset fail")
+            info = {
+                'too_big_jump': False,
+                'distance': self._last_distance,
+                'max_dist': self._max_distance - self._episode_start_distance,
+                'out_of_center': self._last_distance_from_mid,
+                "velocity": 0.0,
+                "moving_forward": 0.0,
+                "max_distance_gain": 0.0,
+                "position": [0.0, 0.0, 0.0],
+                "track_pos": [0.0, 0.0, 0.0],
+                "too_slow": False,
+                "colided": False,
+                "out_of_track": False,
+                "ended": True
+            }
+            self.connect_server()
+
+            return self.reset()
 
         # if self.render_mode == "graphic":
         #    self._render_frame()
         self._accSpeed = 500.0
         self._out_too_long = 0
-        self._last_distance_from_mid = math.sqrt(math.pow(unpacked[14]-unpacked[0], 2) + math.pow(unpacked[15]-unpacked[1], 2))
+        self._last_distance_from_mid = math.sqrt(
+            math.pow(unpacked[14] - unpacked[0], 2) + math.pow(unpacked[15] - unpacked[1], 2))
         self._last_distance = unpacked[12]
         self._max_distance = unpacked[12]
         self._episode_start_distance = unpacked[12]
@@ -255,84 +287,139 @@ class VDriftEnv(gym.Env):
     # use of ``_get_obs`` and ``_get_info``:
     def step(self, action):
         ended = False
-        timestep = 0.05
-        actionPacket = struct.pack("ffffff??", timestep, max(action[0], 0.0), action[1], -min(action[0], 0.0),
+        timestep = 0.02
+        actionPacket = struct.pack("ffffff???", timestep, action[0] if action[0] < -9.0 else max(action[0], 0.0),
+                                   action[1], -min(action[0], 0.0),
                                    action[3],
-                                   max(min(action[4], 1.0), -1.0), False, True)
+                                   max(min(action[4], 1.0), -1.0), False, True, False)
         self.socket.sendall(actionPacket)
 
         data = self.socket.recv(1024)
-        unpacked = struct.unpack("ffffffffffffffffffffffffffffff", data)
-        image = np.array([])
-        if photo:
-            self.socket.sendall(bytes("OK", 'ascii'))
-            data = self.socket.recv(1024)
-            size_data = data.decode('ascii')
-            size = int(size_data[5:])
-            # print(size, "\n\n\n\n\n\n\n")
-            self.socket.sendall(bytes("OK", 'ascii'))
-            total_received = 0
-            total_data = b""
+        unpacked = ()
+        try:
+            unpacked = struct.unpack("ffffffffffffffffffffffffffffff", data)
 
-            while total_received < size:
-                data = self.socket.recv(min(photo_chunk_size, size - total_received))
-                total_received += len(data)
-                total_data += data
-            image = np.frombuffer(total_data, dtype='B')
-            image_dimension = int(math.sqrt(total_received / 3))
-            image = image.reshape((image_dimension, image_dimension, 3))
-            self._observation = image
+            image = np.array([])
+            if photo:
+                self.socket.sendall(bytes("OK", 'ascii'))
+                data = self.socket.recv(1024)
+                size_data = data.decode('ascii')
+                size = int(size_data[5:])
+                # print(size, "\n\n\n\n\n\n\n")
+                self.socket.sendall(bytes("OK", 'ascii'))
+                total_received = 0
+                total_data = b""
 
-        # We use `np.clip` to make sure we don't leave the grid
-        # An episode is done iff the agent has reached the target
-        distance_from_mid_track = math.sqrt(math.pow(unpacked[14]-unpacked[0], 2) + math.pow(unpacked[15]-unpacked[1], 2))
+                while total_received < size:
+                    data = self.socket.recv(min(photo_chunk_size, size - total_received))
+                    total_received += len(data)
+                    total_data += data
+                image = np.frombuffer(total_data, dtype='B')
+                image_dimension = int(math.sqrt(total_received / 3))
+                image = image.reshape((image_dimension, image_dimension, 3))
+                self._observation = image
 
-        distance = max(unpacked[12] - self._max_distance, 0.0)
-        moving_forward = (unpacked[12] - self._last_distance)
-        moved_out_of_mid = (self._last_distance_from_mid - distance_from_mid_track)
+            # We use `np.clip` to make sure we don't leave the grid
+            # An episode is done iff the agent has reached the target
+            distance_from_mid_track = math.sqrt(
+                math.pow(unpacked[14] - unpacked[0], 2) + math.pow(unpacked[15] - unpacked[1], 2))
 
-        colided = unpacked[29] > 0.1
-        out_of_track = unpacked[13] > 0.5
+            distance = max(unpacked[12] - self._max_distance, 0.0)
+            moving_forward = (unpacked[12] - self._last_distance)
+            moved_out_of_mid = (self._last_distance_from_mid - distance_from_mid_track)
 
-        if distance > 1500.0 or abs(moving_forward) > 1500.0:
-            distance = 0.0
-            moving_forward = 0.0
-            self._out_too_long = 99999
-            ended = True
-        else:
-            self._max_distance = max(unpacked[12], self._max_distance)
-            self._last_distance = unpacked[12]
-            self._last_distance_from_mid = distance_from_mid_track
+            colided = unpacked[29] > 0.1
+            out_of_track = unpacked[13] > 0.5
+            too_big_jump = False
+            if distance > 400.0 or abs(moving_forward) > 400.0:
+                too_big_jump = True
+                distance = 0.0
+                moving_forward = 0.0
+                self._out_too_long = 99999
+                print("too high of a jump!!!")
+                ended = True
+            else:
+                self._max_distance = max(unpacked[12], self._max_distance)
+                self._last_distance = unpacked[12]
+                self._last_distance_from_mid = distance_from_mid_track
 
-        vel_sum = abs(unpacked[8]) + abs(unpacked[9]) + abs(unpacked[10])
-        vel_sum_timestep_discounted = vel_sum * timestep
-        # print(distance)
-        reward = (moving_forward + distance * 10.0 ) \
-                 + (moved_out_of_mid) \
-                 #+ (-10.0 * ( 1.0 - vel_sum_timestep_discounted * 10.0) if vel_sum < 0.1 else vel_sum_timestep_discounted )
-        #- 0.1 \
-                 #+ (-200.0 if colided else 0.0) \
-                 #+ (-100.0 if self._out_too_long > 1999 else 0)  # + (-0.5 if out_of_track else 0.0)
-        # reward = reward / 50.0
-        # if out_of_track:
-        #   print(unpacked[14:])
+            vel_sum = abs(unpacked[8]) + abs(unpacked[9]) + abs(unpacked[10])
+            vel_sum_timestep_discounted = vel_sum * timestep
+            distance_from_mid_deadband = 1.5
+            distance_from_mid = 0.2 * (
+                0.0 if distance_from_mid_track < distance_from_mid_deadband else distance_from_mid_track) * timestep
+            # print(distance)
+            max_distance_multiplier = 10.0 if not (out_of_track) else 1.0
+            velocity_multiplier = 1.0 if not (out_of_track) else 1.0
+            moved_out_of_mid_multiplier = 1.0 if not (out_of_track) else 3.0
+            minimal_speed_kmph = 5
+            minimal_speed = minimal_speed_kmph * timestep / 3.6
 
-        observation = self._get_obs()
-        info = {
-            'max_dist': self._max_distance - self._episode_start_distance,
-            'out_of_center': self._last_distance_from_mid,
-            "velocity": math.sqrt(unpacked[8]**2 + unpacked[9]**2 + unpacked[10]**2),
-            "moving_forward": moving_forward,
-            "max_distance_gain": distance,
-            "position": [unpacked[0], unpacked[1], unpacked[2]],
-            "track_pos": [unpacked[14], unpacked[15], unpacked[16]]
-        }
-        colision_timeout_factor = 100 #was: 1000
-        out_of_track_timeout_factor = 0 #was: 0.1
-        self._out_too_long += (10 if vel_sum < 0.5 else -0.5) + ( colision_timeout_factor if colided else 0) + (
-            out_of_track_timeout_factor if out_of_track else 0.0)
-        self._out_too_long = max(self._out_too_long, 0.0)
-        return observation, reward, self._out_too_long > 2000 or ended, info
+            # +
+            # - 0.1 \
+            # + (-200.0 if colided else 0.0) \
+            # + (-100.0 if self._out_too_long > 1999 else 0)  # + (-0.5 if out_of_track else 0.0)
+            # reward = reward / 50.0
+            # if out_of_track:
+            #   print(unpacked[14:])
+            too_slow = vel_sum < 0.5
+
+            observation = self._get_obs()
+            info = {
+                'too_big_jump': too_big_jump,
+                'distance': self._last_distance,
+                'max_dist': self._max_distance - self._episode_start_distance,
+                'out_of_center': self._last_distance_from_mid,
+                "velocity": math.sqrt(unpacked[8] ** 2 + unpacked[9] ** 2 + unpacked[10] ** 2),
+                "moving_forward": moving_forward,
+                "max_distance_gain": distance,
+                "position": [unpacked[0], unpacked[1], unpacked[2]],
+                "track_pos": [unpacked[14], unpacked[15], unpacked[16]],
+                "too_slow": too_slow,
+                "colided": colided,
+                "out_of_track": out_of_track,
+                # "img": image
+            }
+            colision_timeout_factor = 100  # was: 1000
+            out_of_track_timeout_factor = 0  # was: 0.1
+            self._out_too_long += (5 if too_slow else -0.5) + (colision_timeout_factor if colided else 0) + (
+                out_of_track_timeout_factor if out_of_track else 0.0)
+            self._out_too_long = max(self._out_too_long, 0.0)
+            info["ended"] = self._out_too_long > 2000
+
+            reward = (moving_forward + (max_distance_multiplier * distance)) \
+                     + moved_out_of_mid_multiplier * moved_out_of_mid \
+                     - (distance_from_mid) \
+                     + velocity_multiplier * (-(1.0 - vel_sum_timestep_discounted * (
+                        1.0 / minimal_speed)) if vel_sum < minimal_speed else vel_sum_timestep_discounted / 4) \
+                     - (8.0 if colided else 0.0) \
+                     - (5.0 if out_of_track else 0.0) \
+                     - (30.0 if info["ended"] else 0.0)
+            # + (-10.0 if colided else 0.0)
+
+            return observation, reward, self._out_too_long > 2000 or ended, info
+
+        except struct.error as e:
+            print(e)
+            print("restarting env")
+            info = {
+                'too_big_jump': False,
+                'distance': self._last_distance,
+                'max_dist': self._max_distance - self._episode_start_distance,
+                'out_of_center': self._last_distance_from_mid,
+                "velocity": 0.0,
+                "moving_forward": 0.0,
+                "max_distance_gain": 0.0,
+                "position": [0.0, 0.0, 0.0],
+                "track_pos": [0.0, 0.0, 0.0],
+                "too_slow": False,
+                "colided": False,
+                "out_of_track": False,
+                "ended": True,
+            }
+            self.connect_server()
+
+            return np.zeros(shape=(H, W, 3), dtype=np.uint8), 0.0, True, info
 
     # %%
     # Rendering
@@ -343,8 +430,8 @@ class VDriftEnv(gym.Env):
     # can use it as a skeleton for your own environments:
 
     def render(self, mode):
-        if self.render_mode == "graphic":
-            return self._render_frame()
+        if mode == "rgb_array":
+            return self._observation
 
     def _render_frame(self):
         y = [0.0] + [self._observation[10 + x * 3] for x in range(0, 5)]
