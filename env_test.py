@@ -6,7 +6,7 @@ import gym.wrappers.normalize as norm
 
 from stable_baselines3 import A2C, PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import VecFrameStack, VecNormalize, VecVideoRecorder
+from stable_baselines3.common.vec_env import VecFrameStack, VecNormalize, VecVideoRecorder, VecTransposeImage
 
 import imageio
 import numpy as np
@@ -57,6 +57,8 @@ def updateGraph():
 
 
 eval_env = make_vec_env(envFactory, n_envs=1)
+eval_env = VecTransposeImage(eval_env)
+
 eval_env = VecFrameStack(eval_env, 8)
 eval_env = VecVideoRecorder(eval_env, "logs/video",
                            record_video_trigger=lambda x: x == 0, video_length=max_images,
@@ -67,9 +69,11 @@ eval_env = VecVideoRecorder(eval_env, "logs/video",
 custom_objects = {
     "tensorboard_log": "./ppo_cnn_tensorboard_5/",
     "batch_size": 512,
-    "n_epochs": 3
+    "n_epochs": 3,
+    'observation_space': eval_env.observation_space,
+    'action_space': eval_env.action_space
 }
-model = PPO.load("./ppo_58", eval_env, verbose=1, custom_objects=custom_objects, tensorboard_log="./ppo_cnn_tensorboard_xxxx/")  # = PPO("CnnPolicy", env, verbose=1)
+model = PPO.load("./best_model_3/best_model", eval_env, verbose=1, custom_objects=custom_objects, tensorboard_log="./ppo_cnn_tensorboard_xxxx/")  # = PPO("CnnPolicy", env, verbose=1)
 
 eval_env.reset()
 observation = eval_env.reset()
