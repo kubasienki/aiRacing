@@ -2,6 +2,11 @@
 
 A complete reinforcement learning environment and training framework for autonomous racing in the [VDrift](http://vdrift.net) open-source racing simulator.
 
+<p align="center">
+  <a href="https://youtu.be/0yEg7_mNi3E"><img src="https://img.youtube.com/vi/0yEg7_mNi3E/0.jpg" width="45%"/></a>
+  <a href="https://youtu.be/7KJws0UaHgw"><img src="https://img.youtube.com/vi/7KJws0UaHgw/0.jpg" width="45%"/></a>
+</p>
+
 ## Features
 
 - **OpenAI Gym Environment**: Standard Gym interface for VDrift racing simulator
@@ -137,8 +142,7 @@ vdrift-rl/
 This project demonstrates successful training of vision-based racing agents using PPO.
 
 <p align="center">
-  <img src="docs/racing_ppo.gif" width="45%" alt="PPO agent racing"/>
-  <img src="docs/rotate.gif" width="45%" alt="Track overview"/>
+  <img src="docs/rotate.gif" width="60%" alt="Track overview"/>
 </p>
 
 Archived training runs include experiments with:
