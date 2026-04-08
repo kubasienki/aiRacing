@@ -3,8 +3,16 @@
 A complete reinforcement learning environment and training framework for autonomous racing in the [VDrift](http://vdrift.net) open-source racing simulator.
 
 <p align="center">
-  <video src="https://github.com/kubasienki/aiRacing/releases/download/v/ai-racer-output.mp4" controls width="45%"></video>
-  <video src="https://github.com/kubasienki/aiRacing/releases/download/v/ai-racer-output-1.mp4" controls width="45%"></video>
+  <span width="45%">
+    
+https://github.com/user-attachments/assets/f6be0b2d-ec22-4b56-b170-921a108a2bc0
+
+  </span>
+  <span width="45%">
+    
+https://github.com/user-attachments/assets/e093212f-bb0f-4e05-946e-22e6bc802174
+    
+  </span>
 </p>
 <p align="center">
   <a href="https://youtu.be/0yEg7_mNi3E">YouTube: Run 1</a> &nbsp;|&nbsp;
