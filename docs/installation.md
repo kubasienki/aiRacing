@@ -42,8 +42,8 @@ sudo pacman -S python python-pip git base-devel cmake redis \
 ### 2. Clone the Repository
 
 ```bash
-git clone --recursive https://github.com/yourusername/vdrift-rl.git
-cd vdrift-rl
+git clone --recursive https://github.com/kubasienki/aiRacing.git
+cd aiRacing
 ```
 
 **Note**: The `--recursive` flag is important to clone the VDrift submodule.

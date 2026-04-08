@@ -1,5 +1,5 @@
 import gym
-from vdriftenv import VDriftEnv
+from vdrift_rl import VDriftEnv
 import gym.wrappers.rescale_action as rescaler
 import gym.wrappers.frame_stack as fstack
 import gym.wrappers.normalize as norm

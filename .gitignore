@@ -39,3 +39,9 @@ dump.rdb
 *.save
 *.txy
 *.bak
+
+# TensorBoard logs from project root (pre-package-restructure artifact)
+ppo_cnn_tensorboard/
+
+# Claude Code settings
+.claude/

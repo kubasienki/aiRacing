@@ -1,0 +1,8 @@
+[submodule "vdrift"]
+	path = vdrift
+	url = https://github.com/kubasienki/vdrift.git
+	branch = master
+
+[submodule "dreamerv3"]
+	path = dreamerv3
+	url = https://github.com/danijar/dreamerv3.git

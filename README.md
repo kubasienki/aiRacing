@@ -45,7 +45,7 @@ env.close()
 
 ```bash
 # Clone the repository
-git clone --recursive https://github.com/yourusername/vdrift-rl.git
+git clone --recursive https://github.com/kubasienki/aiRacing.git
 cd vdrift-rl
 
 # Install the package
@@ -166,8 +166,8 @@ If you use this project in your research, please cite:
 ```bibtex
 @software{vdrift_rl,
   title = {VDrift RL: Deep Reinforcement Learning for Racing},
-  author = {Your Name},
+  author = {Jakub Sienkiewicz},
   year = {2025},
-  url = {https://github.com/yourusername/vdrift-rl}
+  url = {https://github.com/kubasienki/aiRacing}
 }
 ```

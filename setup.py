@@ -9,11 +9,11 @@ setup(
     name="vdrift_rl",
     version="0.1.0",
     author="Kuba Sienki",
-    author_email="your.email@example.com",  # TODO: Update with your email
+    author_email="kubasienki@gmail.com",
     description="Reinforcement Learning environment for VDrift racing simulator",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/vdrift-rl",  # TODO: Update with your repo
+    url="https://github.com/kubasienki/aiRacing",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
@@ -53,8 +53,8 @@ setup(
     },
     keywords='reinforcement-learning racing simulation vdrift gym openai-gym',
     project_urls={
-        'Documentation': 'https://github.com/yourusername/vdrift-rl/tree/master/docs',
-        'Source': 'https://github.com/yourusername/vdrift-rl',
-        'Tracker': 'https://github.com/yourusername/vdrift-rl/issues',
+        'Documentation': 'https://github.com/kubasienki/aiRacing/tree/master/docs',
+        'Source': 'https://github.com/kubasienki/aiRacing',
+        'Tracker': 'https://github.com/kubasienki/aiRacing/issues',
     },
 )

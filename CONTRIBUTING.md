@@ -33,7 +33,7 @@ Feature requests and enhancement suggestions are welcome! Please:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/vdrift-rl.git
+git clone https://github.com/kubasienki/aiRacing.git
 cd vdrift-rl
 
 # Create a virtual environment
