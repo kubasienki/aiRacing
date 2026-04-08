@@ -46,7 +46,7 @@ env.close()
 ```bash
 # Clone the repository
 git clone --recursive https://github.com/kubasienki/aiRacing.git
-cd vdrift-rl
+cd aiRacing
 
 # Install the package
 pip install -e .
@@ -134,7 +134,14 @@ vdrift-rl/
 
 ## Research & Results
 
-This project demonstrates successful training of vision-based racing agents using PPO. Archived training runs include experiments with:
+This project demonstrates successful training of vision-based racing agents using PPO.
+
+<p align="center">
+  <img src="docs/racing_ppo.gif" width="45%" alt="PPO agent racing"/>
+  <img src="docs/rotate.gif" width="45%" alt="Track overview"/>
+</p>
+
+Archived training runs include experiments with:
 - State-dependent exploration (SDE)
 - Collision penalty tuning
 - Multi-lap training episodes
