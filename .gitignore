@@ -35,6 +35,9 @@ venv/
 # Redis
 dump.rdb
 
+# Video files (hosted via GitHub Releases)
+*.mp4
+
 # Temporary files
 *.save
 *.txy
