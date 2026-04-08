@@ -1,0 +1,41 @@
+# Training data and models (archived in archived_training/)
+archived_training/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+.venv
+env/
+venv/
+
+# Redis
+dump.rdb
+
+# Temporary files
+*.save
+*.txy
+*.bak

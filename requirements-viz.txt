@@ -1,0 +1,6 @@
+# Visualization dependencies
+-r requirements.txt
+
+matplotlib>=3.3.0
+pygame>=2.0.0
+imageio>=2.9.0

@@ -1,0 +1,60 @@
+# Attributions and Licenses
+
+## VDrift RL Python Package
+
+The `vdrift_rl` Python package is licensed under the MIT License.
+See LICENSE file for details.
+
+Copyright (c) 2023-2026 Kuba Sienki
+
+## Modified VDrift Racing Simulator
+
+This project includes a modified version of the VDrift racing simulator
+as a git submodule (located in `vdrift/` directory).
+
+VDrift is licensed under the GNU General Public License v3.0 (GPL-3.0).
+
+- Original Project: http://vdrift.net
+- Source Code: https://github.com/VDrift/vdrift
+- License: GPL-3.0 (see vdrift/LICENSE)
+- Copyright: VDrift Development Team
+
+### VDrift Modifications
+
+The modifications made to VDrift for reinforcement learning support include:
+- Addition of TCP server for AI agent communication (aitcpserver.h, aitcpserver.cpp)
+- Lap counter in telemetry data
+- Steering input mapping adjustments
+- Configurable resolution settings
+- AI mode initialization
+
+These modifications are also licensed under GPL-3.0 to comply with VDrift's
+original license.
+
+## License Compatibility
+
+This project uses a dual-licensing approach:
+
+1. **Python RL Environment** (`src/vdrift_rl/`): MIT License
+   - Can be used freely with proper attribution
+   - Communicates with VDrift via TCP sockets
+
+2. **Modified VDrift Simulator** (`vdrift/` submodule): GPL-3.0
+   - Must comply with GPL-3.0 terms when distributing
+   - Modifications to VDrift source code are GPL-3.0
+
+The MIT-licensed Python wrapper and GPL-3.0 VDrift simulator remain separate
+components that communicate via network sockets, maintaining license compatibility.
+
+## Third-Party Dependencies
+
+This project builds upon:
+
+- **OpenAI Gym** - MIT License
+- **NumPy** - BSD License
+- **Redis-py** - MIT License
+- **Stable-Baselines3** - MIT License (optional, for training)
+- **PyTorch** - BSD License (optional, for training)
+- **Matplotlib** - PSF License (optional, for visualization)
+
+See requirements.txt for complete dependency list.
